@@ -1,34 +1,34 @@
-# DANZI GenAI — NSI Leadership RAG Assistant
+# Leadership Update Assistant (RAG)
 
-A **Retrieval-Augmented Generation (RAG)** project that turns scattered NSI notes into **leadership-ready updates** — grounded in retrieved sources with citations.
+A **Retrieval‑Augmented Generation (RAG)** project that helps produce
+clear, leadership‑ready project updates from scattered project documents.
 
-## Why this exists
-In delivery readiness work, information is spread across notes, emails, and documents.
-Leadership needs **decision-oriented updates**:
+## Problem
+In many teams, project information is fragmented across:
+- status notes
+- risk logs
+- planning documents
+- weekly updates
+
+Leaders need:
+- concise summaries
+- clear risks & mitigations
+- explicit decision asks
+
+Generic LLMs often guess. This project uses **RAG** to ground answers in retrieved sources.
+
+## Solution
+This system retrieves relevant project content first, then generates
+structured leadership updates with **citations**.
+
+## What it supports
 - Executive summary
-- Risks & dependencies (with mitigation + owner)
-- Leadership asks
-- 60–90 sec talk track
-
-A vanilla LLM guesses. RAG retrieves verified context first, then generates a grounded response.
-
-## What it does (MVP)
-- Ingests NSI documents (synthetic, GitHub-safe)
-- Chunks + embeds content into a local vector store
-- Retrieves relevant chunks for a question
-- Generates a leadership-style answer **with citations**
-- Includes a basic evaluation dataset for retrieval quality
+- Risks & mitigations
+- Leadership / decision asks
+- Short talk tracks (60–90 seconds)
+- Source grounding and citations
 
 ## Demo (CLI)
 ```bash
-python -m venv .venv
-.venv\Scripts\activate
-python -m pip install -r requirements.txt
-
-# Build index
 python apps/index_build.py
-
-# Ask questions (leadership mode)
-python apps/cli.py --question "What is the leadership ask for NSI 823?"
-python apps/cli.py --question "List risks and mitigations for NSI 826"
-python apps/cli.py --question "Give me a 60-90 sec talk track for NSI 823"
+python apps/cli.py --question "What decision is required for Project Apollo?"
