@@ -1,0 +1,52 @@
+from crewai import Agent, Task, Crew
+from dotenv import load_dotenv
+
+load_dotenv()
+
+analyst = Agent(
+    role="Market Analyst",
+    goal="Analyze a topic and extract useful insights",
+    backstory="Good at breaking down topics into simple insights",
+    llm="gpt-4o-mini"
+)
+
+writer = Agent(
+    role="Writer",
+    goal="Write simple and clear content",
+    backstory="Explains things in an easy way",
+    llm="gpt-4o-mini"
+)
+
+reviewer = Agent(
+    role="Reviewer",
+    goal="Check content and improve quality",
+    backstory="Ensures clarity and correctness",
+    llm="gpt-4o-mini"
+)
+
+task1 = Task(
+    description="Analyze why AI is important for students",
+    expected_output="5 simple key points",
+    agent=analyst
+)
+
+task2 = Task(
+    description="Write a short explanation using the points",
+    expected_output="Simple paragraph",
+    agent=writer
+)
+
+task3 = Task(
+    description="Review and improve the explanation",
+    expected_output="Final improved paragraph",
+    agent=reviewer
+)
+
+crew = Crew(
+    agents=[analyst, writer, reviewer],
+    tasks=[task1, task2, task3],
+    verbose=True
+)
+
+result = crew.kickoff()
+print(result)
