@@ -32,3 +32,33 @@ structured leadership updates with **citations**.
 ```bash
 python apps/index_build.py
 python apps/cli.py --question "What decision is required for Project Apollo?"
+```
+
+## Simple QA Demo (Fast Local Version)
+This repository also includes a lightweight retrieval-first demo that is easy to run locally.
+
+### Files
+- `rag_demo.py`: terminal-based demo
+- `web_demo.py`: browser-based demo
+- `knowledge.txt`: small trusted knowledge base for answers
+
+### Run CLI demo
+```bash
+python rag_demo.py
+```
+
+### Run web demo
+```bash
+python web_demo.py
+```
+
+Open this URL in your browser:
+
+```text
+http://127.0.0.1:8000
+```
+
+### Sample questions
+- Who owns delivery readiness?
+- What should happen before Plan Exit?
+- When is the first service date?
