@@ -23,10 +23,41 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+function Ensure-AzOnPath {
+    if (Get-Command az -ErrorAction SilentlyContinue) {
+        return
+    }
+
+    $azDirCandidates = @(
+        "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin",
+        "C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin"
+    )
+
+    foreach ($dir in $azDirCandidates) {
+        if (Test-Path (Join-Path $dir "az.cmd")) {
+            $env:Path = "$env:Path;$dir"
+            break
+        }
+    }
+}
+
 function Assert-Command {
     param([string]$Name)
     if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
         throw "Required command '$Name' was not found. Install it and retry."
+    }
+}
+
+function Invoke-Az {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$Args,
+        [string]$FailureMessage = "Azure CLI command failed."
+    )
+
+    & az @Args
+    if ($LASTEXITCODE -ne 0) {
+        throw $FailureMessage
     }
 }
 
@@ -61,58 +92,59 @@ function Load-EnvSettings {
     return $pairs
 }
 
+Ensure-AzOnPath
 Assert-Command -Name "az"
 
-az account show 1>$null
-if ($LASTEXITCODE -ne 0) {
-    throw "Azure CLI is not logged in. Run 'az login' and retry."
-}
+Invoke-Az -Args @("account", "show") -FailureMessage "Azure CLI is not logged in. Run 'az login' and retry." | Out-Null
 
 Set-Location $PSScriptRoot
 
 Write-Host "Setting subscription..." -ForegroundColor Cyan
-az account set --subscription $SubscriptionId
+Invoke-Az -Args @("account", "set", "--subscription", $SubscriptionId) -FailureMessage "Failed to set Azure subscription."
 
 Write-Host "Ensuring resource group..." -ForegroundColor Cyan
-az group create --name $ResourceGroup --location $Location 1>$null
+Invoke-Az -Args @("group", "create", "--name", $ResourceGroup, "--location", $Location) -FailureMessage "Failed to create or access resource group." | Out-Null
 
 Write-Host "Ensuring App Service plan..." -ForegroundColor Cyan
-az appservice plan create --name $PlanName --resource-group $ResourceGroup --location $Location --is-linux --sku B1 1>$null
+Invoke-Az -Args @("appservice", "plan", "create", "--name", $PlanName, "--resource-group", $ResourceGroup, "--location", $Location, "--is-linux", "--sku", "B1") -FailureMessage "Failed to create or access App Service plan." | Out-Null
 
 Write-Host "Ensuring Azure Container Registry..." -ForegroundColor Cyan
-az acr create --name $AcrName --resource-group $ResourceGroup --location $Location --sku Basic --admin-enabled true 1>$null
+Invoke-Az -Args @("acr", "create", "--name", $AcrName, "--resource-group", $ResourceGroup, "--location", $Location, "--sku", "Basic", "--admin-enabled", "true") -FailureMessage "Failed to create or access Azure Container Registry." | Out-Null
 
 $imageRef = "${AcrName}.azurecr.io/${ImageName}:${ImageTag}"
 
 Write-Host "Building and pushing container image to ACR..." -ForegroundColor Cyan
-az acr build --registry $AcrName --image "${ImageName}:${ImageTag}" .
+Invoke-Az -Args @("acr", "build", "--registry", $AcrName, "--image", "${ImageName}:${ImageTag}", ".") -FailureMessage "Failed to build and push image to ACR."
 
 Write-Host "Ensuring web app..." -ForegroundColor Cyan
-$existing = az webapp list --resource-group $ResourceGroup --query "[?name=='$WebAppName'].name" -o tsv
+$existing = (& az webapp list --resource-group $ResourceGroup --query "[?name=='$WebAppName'].name" -o tsv)
+if ($LASTEXITCODE -ne 0) {
+    throw "Failed to query existing web apps in resource group."
+}
 if (-not $existing) {
-    az webapp create --resource-group $ResourceGroup --plan $PlanName --name $WebAppName --deployment-container-image-name $imageRef 1>$null
+    Invoke-Az -Args @("webapp", "create", "--resource-group", $ResourceGroup, "--plan", $PlanName, "--name", $WebAppName, "--container-image-name", $imageRef) -FailureMessage "Failed to create web app." | Out-Null
 } else {
-    az webapp config container set --resource-group $ResourceGroup --name $WebAppName --container-image-name $imageRef 1>$null
+    Invoke-Az -Args @("webapp", "config", "container", "set", "--resource-group", $ResourceGroup, "--name", $WebAppName, "--container-image-name", $imageRef) -FailureMessage "Failed to update web app container image." | Out-Null
 }
 
 Write-Host "Configuring baseline app settings..." -ForegroundColor Cyan
-az webapp config appsettings set --resource-group $ResourceGroup --name $WebAppName --settings WEBSITES_PORT=8501 SCM_DO_BUILD_DURING_DEPLOYMENT=false 1>$null
+Invoke-Az -Args @("webapp", "config", "appsettings", "set", "--resource-group", $ResourceGroup, "--name", $WebAppName, "--settings", "WEBSITES_PORT=8501", "SCM_DO_BUILD_DURING_DEPLOYMENT=false") -FailureMessage "Failed to apply baseline app settings." | Out-Null
 
 Write-Host "Applying runtime settings..." -ForegroundColor Cyan
-az webapp config set --resource-group $ResourceGroup --name $WebAppName --always-on true --health-check-path "/_stcore/health" 1>$null
+Invoke-Az -Args @("webapp", "config", "set", "--resource-group", $ResourceGroup, "--name", $WebAppName, "--always-on", "true", "--generic-configurations", '{"healthCheckPath":"/_stcore/health"}') -FailureMessage "Failed to configure runtime settings." | Out-Null
 
 if (-not $SkipEnvImport) {
     Write-Host "Importing settings from env file..." -ForegroundColor Cyan
     $envPairs = Load-EnvSettings -Path $EnvFile
     if ($envPairs.Count -gt 0) {
-        az webapp config appsettings set --resource-group $ResourceGroup --name $WebAppName --settings $envPairs 1>$null
+        Invoke-Az -Args @("webapp", "config", "appsettings", "set", "--resource-group", $ResourceGroup, "--name", $WebAppName, "--settings") + $envPairs -FailureMessage "Failed to import environment settings." | Out-Null
     } else {
         Write-Host "No app settings imported from env file." -ForegroundColor Yellow
     }
 }
 
 Write-Host "Restarting web app..." -ForegroundColor Cyan
-az webapp restart --resource-group $ResourceGroup --name $WebAppName 1>$null
+Invoke-Az -Args @("webapp", "restart", "--resource-group", $ResourceGroup, "--name", $WebAppName) -FailureMessage "Failed to restart web app." | Out-Null
 
 $url = "https://$WebAppName.azurewebsites.net"
 Write-Host ""
