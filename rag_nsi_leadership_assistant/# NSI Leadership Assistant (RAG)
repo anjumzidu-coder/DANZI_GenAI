@@ -1,0 +1,29 @@
+# NSI Leadership Assistant (RAG)
+
+A Retrieval‑Augmented Generation (RAG) system designed to help
+Program Managers and CPSMs generate **leadership‑ready updates**
+from NSI project documents.
+
+## Problem
+Leadership updates require:
+- Accurate status
+- Clear risks & dependencies
+- Actionable leadership asks
+
+This information is often scattered across emails, notes, and documents.
+
+## Solution
+This project uses a RAG pipeline to:
+- Retrieve relevant NSI content
+- Ground responses in source documents
+- Generate executive summaries, risks, and talk tracks
+- Provide citations for traceability
+
+## Key Features
+- RAG pipeline (chunking → embeddings → vector DB → retrieval → generation)
+- Leadership‑oriented prompts (status, risks, asks)
+- Source citation with every answer
+- CLI‑based interface (API ready)
+
+## Status
+🚧 Work in Progress

@@ -1,0 +1,7 @@
+NSI #826 First Service Date is October 2026.
+
+CPSM is responsible for Delivery Readiness activities.
+
+Design Exit must be completed before Plan Exit.
+
+Training material should be available before General Availability.

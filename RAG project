@@ -1,0 +1,30 @@
+DANZI_GenAI/
+├─ README.md
+├─ pyproject.toml / requirements.txt
+├─ .env.example
+├─ .gitignore
+├─ data/
+│  ├─ raw/                 # sanitized source docs (md/txt/pdf)
+│  ├─ processed/           # cleaned text, chunks
+│  └─ gold/                # evaluation Q&A pairs (optional)
+├─ src/
+│  ├─ nsi_rag/
+│  │  ├─ __init__.py
+│  │  ├─ config.py         # settings (chunk size, model names, paths)
+│  │  ├─ ingest.py         # load + clean + extract text
+│  │  ├─ chunk.py          # chunking strategy + metadata
+│  │  ├─ embed.py          # embeddings
+│  │  ├─ index.py          # vector store build/update
+│  │  ├─ retrieve.py       # retriever + filters + rerank
+│  │  ├─ prompts.py        # prompt templates (leadership modes)
+│  │  ├─ generate.py       # grounded answer generation + citations
+│  │  ├─ evaluate.py       # retrieval + answer quality eval
+│  │  └─ ui_cli.py         # CLI app (ask questions)
+├─ apps/
+│  ├─ cli.py               # `python apps/cli.py --question "..."`
+│  └─ batch.py             # generate weekly exec updates from notes
+├─ outputs/
+│  ├─ answers/             # generated Q&A with citations
+│  └─ reports/             # evaluation reports
+└─ tests/
+   └─ test_retrieval.py
