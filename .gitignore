@@ -3,6 +3,10 @@ __pycache__/
 *.pyc
 *.pyo
 .venv/
+build/
+dist/
+release/
+*.spec
 *.xlsm
 *.xlsx
 *.csv
